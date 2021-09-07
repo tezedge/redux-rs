@@ -3,14 +3,15 @@ use crate::{Middleware, Reducer, Subscription, Vec};
 /// A container holding a state and providing the possibility to dispatch actions.
 ///
 /// A store is defined by the state is holds and the actions it can dispatch.
-pub struct Store<State, Action> {
+pub struct Store<State, Service, Action> {
     reducer: Reducer<State, Action>,
     state: State,
+    service: Service,
     middlewares: Vec<Middleware<State, Service, Action>>,
     subscriptions: Vec<Subscription<State>>
 }
 
-impl<State, Action> Store<State, Action> {
+impl<State, Service, Action> Store<State, Service, Action> {
     /// Creates a new store.
     ///
     /// # Example
@@ -34,9 +35,10 @@ impl<State, Action> Store<State, Action> {
     ///
     /// let mut store = Store::new(reducer, 0);
     /// ```
-    pub fn new(reducer: Reducer<State, Action>, initial_state: State) -> Self {
+    pub fn new(reducer: Reducer<State, Action>, service: Service, initial_state: State) -> Self {
         Self {
             reducer,
+            service,
             state: initial_state,
             middlewares: Vec::new(),
             subscriptions: Vec::new()
@@ -54,8 +56,14 @@ impl<State, Action> Store<State, Action> {
     /// #
     /// println!("Current state: {}", store.state());
     /// ```
+    #[inline(always)]
     pub fn state(&self) -> &State {
         &self.state
+    }
+
+    #[inline(always)]
+    pub fn service(&mut self) -> &mut Service {
+        &mut self.service
     }
 
     /// Dispatches an action which is handles by the reducer, after the store got passed through the middleware.
@@ -140,7 +148,7 @@ impl<State, Action> Store<State, Action> {
     /// Middleware provides the possibility to intercept actions dispatched before they reach the reducer.
     ///
     /// See [`Middleware`](type.Middleware.html).
-    pub fn add_middleware(&mut self, middleware: Middleware<State, Action>) {
+    pub fn add_middleware(&mut self, middleware: Middleware<State, Service, Action>) {
         self.middlewares.push(middleware);
     }
 
