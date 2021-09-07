@@ -6,7 +6,7 @@ use crate::{Middleware, Reducer, Subscription, Vec};
 pub struct Store<State, Action> {
     reducer: Reducer<State, Action>,
     state: State,
-    middleware: Vec<Middleware<State, Action>>,
+    middlewares: Vec<Middleware<State, Service, Action>>,
     subscriptions: Vec<Subscription<State>>
 }
 
@@ -38,7 +38,7 @@ impl<State, Action> Store<State, Action> {
         Self {
             reducer,
             state: initial_state,
-            middleware: Vec::new(),
+            middlewares: Vec::new(),
             subscriptions: Vec::new()
         }
     }
@@ -85,30 +85,14 @@ impl<State, Action> Store<State, Action> {
     /// println!("Current state: {}", store.state());
     /// ```
     pub fn dispatch(&mut self, action: Action) {
-        if self.middleware.is_empty() {
-            self.dispatch_reducer(&action);
-        } else {
-            self.dispatch_middleware(0, action);
+        self.dispatch_reducer(&action);
+        for i in 0..self.middlewares.len() {
+            self.middlewares[i](self, &action);
         }
-    }
-
-    /// Runs one middleware.
-    fn dispatch_middleware(&mut self, index: usize, action: Action) {
-        if index == self.middleware.len() {
-            self.dispatch_reducer(&action);
-            return;
-        }
-
-        let next = self.middleware[index](self, action);
-
-        if next.is_none() {
-            return;
-        }
-
-        self.dispatch_middleware(index + 1, next.unwrap());
     }
 
     /// Runs the reducer.
+    #[inline(always)]
     fn dispatch_reducer(&mut self, action: &Action) {
         self.state = (&self.reducer)(self.state(), action);
         self.dispatch_subscriptions();
@@ -157,7 +141,7 @@ impl<State, Action> Store<State, Action> {
     ///
     /// See [`Middleware`](type.Middleware.html).
     pub fn add_middleware(&mut self, middleware: Middleware<State, Action>) {
-        self.middleware.push(middleware);
+        self.middlewares.push(middleware);
     }
 
     /// Replaces the currently used reducer.

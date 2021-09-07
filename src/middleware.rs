@@ -40,4 +40,4 @@ use crate::Store;
 /// let mut store = Store::new(reducer, 0);
 /// store.add_middleware(shall_not_increment_middleware);
 /// ```
-pub type Middleware<State, Action> = fn(&mut Store<State, Action>, Action) -> Option<Action>;
+pub type Middleware<State, Action> = fn(&mut Store<State, Action>, &Action);
