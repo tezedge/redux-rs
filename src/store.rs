@@ -102,7 +102,7 @@ impl<State, Service, Action> Store<State, Service, Action> {
     /// Runs the reducer.
     #[inline(always)]
     fn dispatch_reducer(&mut self, action: &Action) {
-        self.state = (&self.reducer)(self.state(), action);
+        (&self.reducer)(&mut self.state, action);
         self.dispatch_subscriptions();
     }
 

@@ -17,7 +17,7 @@
 ///     }
 /// };
 /// ```
-pub type Reducer<State, Action> = fn(&State, &Action) -> State;
+pub type Reducer<State, Action> = fn(&mut State, &Action);
 
 #[macro_export]
 /// Combines multiple reducers into a single one.
@@ -76,9 +76,9 @@ pub type Reducer<State, Action> = fn(&State, &Action) -> State;
 /// ```
 macro_rules! combine_reducers {
     ($state:ty, $action:ty, $reducer:ident) => ($reducer);
-    ($state:ty, $action:ty, $first:ident, $($second:ident),+) => (
-        |state: &$state, action: $action| -> $state {
-            (combine_reducers!($state, $action, $($second),+))(&$first(state, action), action)
+    ($state:ty, $action:ty, $($reducer:ident),+) => (
+        |state: &mut $state, action: &$action| {
+            $( $reducer(state, action) );+
         }
     )
 }
