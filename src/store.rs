@@ -1,12 +1,41 @@
 use crate::{Middleware, Reducer, Subscription, Vec};
 
+/// Wraps around State and allows only immutable borrow,
+/// Through `StateWrapper::get` method.
+///
+/// Mutable borrow of state can only happen in reducer.
+pub struct StateWrapper<State> {
+    inner: State,
+}
+
+impl<State> StateWrapper<State> {
+    /// Get immutable reference to State.
+    #[inline(always)]
+    pub fn get(&self) -> &State {
+        &self.inner
+    }
+
+    /// Get mutable reference to State.
+    ///
+    /// Only should be used in reducer and is not `pub`
+    /// so it can't be accessed from lib users.
+    #[inline(always)]
+    fn get_mut(&mut self) -> &mut State {
+        &mut self.inner
+    }
+}
+
 /// A container holding a state and providing the possibility to dispatch actions.
 ///
 /// A store is defined by the state is holds and the actions it can dispatch.
 pub struct Store<State, Service, Action> {
     reducer: Reducer<State, Action>,
-    state: State,
-    service: Service,
+    /// Current State.
+    ///
+    /// Immutable access can be gained using `store.state.get()`.
+    /// Mutation can only happen inside reducer.
+    pub state: StateWrapper<State>,
+    pub service: Service,
     middlewares: Vec<Middleware<State, Service, Action>>,
     subscriptions: Vec<Subscription<State>>
 }
@@ -39,7 +68,9 @@ impl<State, Service, Action> Store<State, Service, Action> {
         Self {
             reducer,
             service,
-            state: initial_state,
+            state: StateWrapper {
+                inner: initial_state
+            },
             middlewares: Vec::new(),
             subscriptions: Vec::new()
         }
@@ -58,7 +89,7 @@ impl<State, Service, Action> Store<State, Service, Action> {
     /// ```
     #[inline(always)]
     pub fn state(&self) -> &State {
-        &self.state
+        self.state.get()
     }
 
     #[inline(always)]
@@ -102,7 +133,7 @@ impl<State, Service, Action> Store<State, Service, Action> {
     /// Runs the reducer.
     #[inline(always)]
     fn dispatch_reducer(&mut self, action: &Action) {
-        (&self.reducer)(&mut self.state, action);
+        (&self.reducer)(self.state.get_mut(), action);
         self.dispatch_subscriptions();
     }
 
