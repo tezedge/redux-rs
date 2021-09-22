@@ -77,6 +77,12 @@ impl ActionId {
     }
 }
 
+impl From<ActionId> for u64 {
+    fn from(id: ActionId) -> Self {
+        id.0
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ActionWithId<Action> {
