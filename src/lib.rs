@@ -70,6 +70,12 @@ pub struct ActionId(u64);
 impl ActionId {
     pub const ZERO: Self = Self(0);
 
+    /// Caller must make sure such action actually exists!
+    #[inline(always)]
+    pub fn new_unchecked(value: u64) -> Self {
+        Self(value)
+    }
+
     #[inline(always)]
     fn increment(&mut self) -> Self {
         self.0 += 1;
