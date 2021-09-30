@@ -5,7 +5,7 @@ use crate::{ActionId, ActionWithId, Middleware, Reducer, Vec};
 ///
 /// Mutable borrow of state can only happen in reducer.
 pub struct StateWrapper<State> {
-    inner: State
+    inner: State,
 }
 
 impl<State> StateWrapper<State> {
@@ -25,6 +25,14 @@ impl<State> StateWrapper<State> {
     }
 }
 
+impl<T: Clone> Clone for StateWrapper<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 /// A container holding a state and providing the possibility to dispatch actions.
 ///
 /// A store is defined by the state is holds and the actions it can dispatch.
@@ -37,7 +45,7 @@ pub struct Store<State, Service, Action> {
     pub state: StateWrapper<State>,
     pub service: Service,
     middlewares: Vec<Middleware<State, Service, Action>>,
-    last_action_id: ActionId
+    last_action_id: ActionId,
 }
 
 impl<State, Service, Action> Store<State, Service, Action> {
@@ -47,10 +55,10 @@ impl<State, Service, Action> Store<State, Service, Action> {
             reducer,
             service,
             state: StateWrapper {
-                inner: initial_state
+                inner: initial_state,
             },
             middlewares: Vec::new(),
-            last_action_id: ActionId(0)
+            last_action_id: ActionId(0),
         }
     }
 
@@ -70,7 +78,7 @@ impl<State, Service, Action> Store<State, Service, Action> {
     pub fn dispatch(&mut self, action: Action) {
         let action_with_id = ActionWithId {
             id: self.last_action_id.increment(),
-            action
+            action,
         };
 
         self.dispatch_reducer(&action_with_id);
@@ -92,5 +100,22 @@ impl<State, Service, Action> Store<State, Service, Action> {
     /// See [`Middleware`](type.Middleware.html).
     pub fn add_middleware(&mut self, middleware: Middleware<State, Service, Action>) {
         self.middlewares.push(middleware);
+    }
+}
+
+impl<State, Service, Action> Clone for Store<State, Service, Action>
+where
+    State: Clone,
+    Service: Clone,
+    Action: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            reducer: self.reducer,
+            service: self.service.clone(),
+            state: self.state.clone(),
+            middlewares: self.middlewares.clone(),
+            last_action_id: self.last_action_id.clone(),
+        }
     }
 }
