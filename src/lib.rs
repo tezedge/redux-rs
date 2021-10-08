@@ -47,52 +47,17 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
 
-#[cfg(not(feature = "std"))]
-extern crate alloc;
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
-#[cfg(feature = "std")]
-use std::vec::Vec;
-
-mod middleware;
-mod reducer;
 mod store;
-
-pub use middleware::Middleware;
-pub use reducer::Reducer;
-#[cfg(not(feature = "devtools"))]
 pub use store::Store;
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone, Copy)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ActionId(u64);
+mod action;
+pub use action::{ActionId, ActionWithId};
 
-impl ActionId {
-    pub const ZERO: Self = Self(0);
+mod reducer;
+pub use reducer::Reducer;
 
-    /// Caller must make sure such action actually exists!
-    #[inline(always)]
-    pub fn new_unchecked(value: u64) -> Self {
-        Self(value)
-    }
+mod effects;
+pub use effects::Effects;
 
-    #[inline(always)]
-    fn increment(&mut self) -> Self {
-        self.0 += 1;
-        *self
-    }
-}
-
-impl From<ActionId> for u64 {
-    fn from(id: ActionId) -> Self {
-        id.0
-    }
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ActionWithId<Action> {
-    pub id: ActionId,
-    #[cfg_attr(feature = "serde", serde(flatten))]
-    pub action: Action
-}
+mod service;
+pub use service::TimeService;

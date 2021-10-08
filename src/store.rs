@@ -1,4 +1,6 @@
-use crate::{ActionId, ActionWithId, Middleware, Reducer, Vec};
+use std::time::{Instant, SystemTime};
+
+use crate::{ActionId, ActionWithId, Effects, Reducer, TimeService};
 
 /// Wraps around State and allows only immutable borrow,
 /// Through `StateWrapper::get` method.
@@ -38,27 +40,46 @@ impl<T: Clone> Clone for StateWrapper<T> {
 /// A store is defined by the state is holds and the actions it can dispatch.
 pub struct Store<State, Service, Action> {
     reducer: Reducer<State, Action>,
+    effects: Effects<State, Service, Action>,
+
     /// Current State.
     ///
     /// Immutable access can be gained using `store.state.get()`.
     /// Mutation can only happen inside reducer.
     pub state: StateWrapper<State>,
     pub service: Service,
-    middlewares: Vec<Middleware<State, Service, Action>>,
+
+    monotonic_time: Instant,
     last_action_id: ActionId,
 }
 
-impl<State, Service, Action> Store<State, Service, Action> {
+impl<State, Service, Action> Store<State, Service, Action>
+where
+    Service: TimeService,
+{
     /// Creates a new store.
-    pub fn new(reducer: Reducer<State, Action>, service: Service, initial_state: State) -> Self {
+    pub fn new(
+        reducer: Reducer<State, Action>,
+        effects: Effects<State, Service, Action>,
+        service: Service,
+        initial_time: SystemTime,
+        initial_state: State,
+    ) -> Self {
+        let initial_time_nanos = initial_time
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map(|x| x.as_nanos())
+            .unwrap_or(0);
+
         Self {
             reducer,
+            effects,
             service,
             state: StateWrapper {
                 inner: initial_state,
             },
-            middlewares: Vec::new(),
-            last_action_id: ActionId(0),
+
+            monotonic_time: Instant::now(),
+            last_action_id: ActionId::new_unchecked(initial_time_nanos as u64),
         }
     }
 
@@ -73,18 +94,22 @@ impl<State, Service, Action> Store<State, Service, Action> {
         &mut self.service
     }
 
-    /// Dispatches an action which is handles by the reducer, after the store got passed through the middleware.
-    /// This can modify the state within the store.
     pub fn dispatch(&mut self, action: Action) {
+        let monotonic_time = self.service.monotonic_time();
+        let time_passed = monotonic_time
+            .duration_since(self.monotonic_time)
+            .as_nanos();
+
+        self.monotonic_time = monotonic_time;
+        self.last_action_id = self.last_action_id.next(time_passed as u64);
+
         let action_with_id = ActionWithId {
-            id: self.last_action_id.increment(),
+            id: self.last_action_id,
             action,
         };
 
         self.dispatch_reducer(&action_with_id);
-        for i in 0..self.middlewares.len() {
-            self.middlewares[i](self, &action_with_id);
-        }
+        self.dispatch_effects(&action_with_id);
     }
 
     /// Runs the reducer.
@@ -93,13 +118,10 @@ impl<State, Service, Action> Store<State, Service, Action> {
         (&self.reducer)(self.state.get_mut(), action_with_id);
     }
 
-    /// Adds a custom middleware to the store.
-    ///
-    /// Middleware provides the possibility to intercept actions dispatched before they reach the reducer.
-    ///
-    /// See [`Middleware`](type.Middleware.html).
-    pub fn add_middleware(&mut self, middleware: Middleware<State, Service, Action>) {
-        self.middlewares.push(middleware);
+    /// Runs the effects.
+    #[inline(always)]
+    fn dispatch_effects(&mut self, action_with_id: &ActionWithId<Action>) {
+        (&self.effects)(self, action_with_id);
     }
 }
 
@@ -112,9 +134,11 @@ where
     fn clone(&self) -> Self {
         Self {
             reducer: self.reducer,
+            effects: self.effects,
             service: self.service.clone(),
             state: self.state.clone(),
-            middlewares: self.middlewares.clone(),
+
+            monotonic_time: self.monotonic_time.clone(),
             last_action_id: self.last_action_id.clone(),
         }
     }
