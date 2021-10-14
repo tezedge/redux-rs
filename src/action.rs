@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 /// Time in nanoseconds from [std::time::UNIX_EPOCH].
 ///
@@ -50,7 +50,23 @@ pub struct ActionWithId<Action> {
 }
 
 impl<Action> ActionWithId<Action> {
-    pub fn duration_since(&self, other: ActionWithId<Action>) -> Duration {
+    #[inline(always)]
+    pub fn time(&self) -> SystemTime {
+        SystemTime::UNIX_EPOCH + self.duration_since_epoch()
+    }
+
+    #[inline(always)]
+    pub fn time_as_nanos(&self) -> u64 {
+        self.id.into()
+    }
+
+    #[inline(always)]
+    pub fn duration_since_epoch(&self) -> Duration {
+        Duration::from_nanos(self.time_as_nanos())
+    }
+
+    #[inline(always)]
+    pub fn duration_since(&self, other: &ActionWithId<Action>) -> Duration {
         self.id.duration_since(other.id)
     }
 }
