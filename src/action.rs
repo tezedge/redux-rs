@@ -45,6 +45,9 @@ impl From<ActionId> for u64 {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ActionWithId<Action> {
     pub id: ActionId,
+    #[cfg(feature = "memory")]
+    /// Total allocated bytes before applying this action (at the start of `dispatch`).
+    pub total_allocated: usize,
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub action: Action,
 }

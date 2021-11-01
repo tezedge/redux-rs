@@ -16,6 +16,9 @@ codecov = { repository = "redux-rs/redux-rs" }
 [features]
 default = ["std"]
 std = []
+memory = []
+jemallocator = ["jemalloc-ctl"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
+jemalloc-ctl = { version = "0.3", optional = true }

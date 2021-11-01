@@ -51,6 +51,11 @@ pub struct Store<State, Service, Action> {
 
     monotonic_time: Instant,
     last_action_id: ActionId,
+
+    #[cfg(feature = "jemallocator")]
+    jemallocator_epoch: jemalloc_ctl::epoch_mib,
+    #[cfg(feature = "jemallocator")]
+    jemallocator_allocated: jemalloc_ctl::stats::allocated_mib,
 }
 
 impl<State, Service, Action> Store<State, Service, Action>
@@ -80,6 +85,13 @@ where
 
             monotonic_time: Instant::now(),
             last_action_id: ActionId::new_unchecked(initial_time_nanos as u64),
+
+            #[cfg(feature = "jemallocator")]
+            jemallocator_epoch: jemalloc_ctl::epoch::mib()
+                .expect("failed to initialize jemallocator epoch"),
+            #[cfg(feature = "jemallocator")]
+            jemallocator_allocated: jemalloc_ctl::stats::allocated::mib()
+                .expect("failed to initialize jemallocator stats"),
         }
     }
 
@@ -105,6 +117,17 @@ where
 
         let action_with_id = ActionWithId {
             id: self.last_action_id,
+            #[cfg(feature = "memory")]
+            total_allocated: {
+                #[cfg(feature = "jemallocator")]
+                {
+                    let _ = self.jemallocator_epoch.advance();
+                    self.jemallocator_allocated.read().unwrap_or(0)
+                }
+                #[cfg(not(feature = "jemallocator"))]
+                0
+            },
+
             action,
         };
 
@@ -140,6 +163,11 @@ where
 
             monotonic_time: self.monotonic_time.clone(),
             last_action_id: self.last_action_id.clone(),
+
+            #[cfg(feature = "jemallocator")]
+            jemallocator_epoch: self.jemallocator_epoch.clone(),
+            #[cfg(feature = "jemallocator")]
+            jemallocator_allocated: self.jemallocator_allocated.clone(),
         }
     }
 }
