@@ -61,10 +61,11 @@ where
     pub fn new(
         reducer: Reducer<State, Action>,
         effects: Effects<State, Service, Action>,
-        service: Service,
+        mut service: Service,
         initial_time: SystemTime,
         initial_state: State,
     ) -> Self {
+        let initial_monotonic_time = service.monotonic_time();
         let initial_time_nanos = initial_time
             .duration_since(SystemTime::UNIX_EPOCH)
             .map(|x| x.as_nanos())
@@ -78,7 +79,7 @@ where
                 inner: initial_state,
             },
 
-            monotonic_time: Instant::now(),
+            monotonic_time: initial_monotonic_time,
             last_action_id: ActionId::new_unchecked(initial_time_nanos as u64),
         }
     }
