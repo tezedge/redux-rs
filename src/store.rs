@@ -50,6 +50,10 @@ pub struct Store<State, Service, Action> {
     pub service: Service,
 
     monotonic_time: Instant,
+
+    /// Current recursion depth of dispatch.
+    recursion_depth: u32,
+
     last_action_id: ActionId,
 }
 
@@ -80,6 +84,7 @@ where
             },
 
             monotonic_time: initial_monotonic_time,
+            recursion_depth: 0,
             last_action_id: ActionId::new_unchecked(initial_time_nanos as u64),
         }
     }
@@ -119,11 +124,16 @@ where
 
         let action_with_meta = ActionWithMeta {
             id: self.last_action_id,
+            depth: self.recursion_depth,
+
             action: action.into(),
         };
+        self.recursion_depth += 1;
 
         self.dispatch_reducer(&action_with_meta);
         self.dispatch_effects(&action_with_meta);
+
+        self.recursion_depth -= 1;
 
         true
     }
@@ -155,6 +165,7 @@ where
             state: self.state.clone(),
 
             monotonic_time: self.monotonic_time.clone(),
+            recursion_depth: self.recursion_depth.clone(),
             last_action_id: self.last_action_id.clone(),
         }
     }

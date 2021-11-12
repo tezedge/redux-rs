@@ -46,6 +46,9 @@ impl From<ActionId> for u64 {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ActionWithMeta<Action> {
     pub id: ActionId,
+    /// Recursion depth of a given action.
+    pub depth: u32,
+
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub action: Action,
 }
