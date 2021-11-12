@@ -1,6 +1,6 @@
 use std::time::{Instant, SystemTime};
 
-use crate::{ActionId, ActionWithId, Effects, Reducer, TimeService};
+use crate::{ActionId, ActionWithId, Effects, EnablingCondition, Reducer, TimeService};
 
 /// Wraps around State and allows only immutable borrow,
 /// Through `StateWrapper::get` method.
@@ -95,7 +95,20 @@ where
         &mut self.service
     }
 
-    pub fn dispatch(&mut self, action: Action) {
+    /// Dispatch an Action.
+    ///
+    /// Returns `true` if the action was enabled, hence if it was dispatched
+    /// to reducer and then effects.
+    ///
+    /// If action is not enabled, we return false and do nothing.
+    pub fn dispatch<T>(&mut self, action: T) -> bool
+    where
+        T: Into<Action> + EnablingCondition<State = State>,
+    {
+        if !action.is_enabled(self.state()) {
+            return false;
+        }
+
         let monotonic_time = self.service.monotonic_time();
         let time_passed = monotonic_time
             .duration_since(self.monotonic_time)
@@ -106,11 +119,13 @@ where
 
         let action_with_id = ActionWithId {
             id: self.last_action_id,
-            action,
+            action: action.into(),
         };
 
         self.dispatch_reducer(&action_with_id);
         self.dispatch_effects(&action_with_id);
+
+        true
     }
 
     /// Runs the reducer.

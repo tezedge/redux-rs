@@ -70,3 +70,12 @@ impl<Action> ActionWithId<Action> {
         self.id.duration_since(other.id)
     }
 }
+
+pub trait EnablingCondition {
+    type State;
+
+    /// Enabling condition for the Action.
+    ///
+    /// Checks if the given action is enabled for a given state.
+    fn is_enabled(&self, state: &Self::State) -> bool;
+}
