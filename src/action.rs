@@ -41,15 +41,16 @@ impl From<ActionId> for u64 {
     }
 }
 
+/// Action with additional metadata like: id.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ActionWithId<Action> {
+pub struct ActionWithMeta<Action> {
     pub id: ActionId,
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub action: Action,
 }
 
-impl<Action> ActionWithId<Action> {
+impl<Action> ActionWithMeta<Action> {
     #[inline(always)]
     pub fn time(&self) -> SystemTime {
         SystemTime::UNIX_EPOCH + self.duration_since_epoch()
@@ -66,7 +67,7 @@ impl<Action> ActionWithId<Action> {
     }
 
     #[inline(always)]
-    pub fn duration_since(&self, other: &ActionWithId<Action>) -> Duration {
+    pub fn duration_since(&self, other: &ActionWithMeta<Action>) -> Duration {
         self.id.duration_since(other.id)
     }
 }

@@ -1,6 +1,6 @@
 use std::time::{Instant, SystemTime};
 
-use crate::{ActionId, ActionWithId, Effects, EnablingCondition, Reducer, TimeService};
+use crate::{ActionId, ActionWithMeta, Effects, EnablingCondition, Reducer, TimeService};
 
 /// Wraps around State and allows only immutable borrow,
 /// Through `StateWrapper::get` method.
@@ -117,26 +117,26 @@ where
         self.monotonic_time = monotonic_time;
         self.last_action_id = self.last_action_id.next(time_passed as u64);
 
-        let action_with_id = ActionWithId {
+        let action_with_meta = ActionWithMeta {
             id: self.last_action_id,
             action: action.into(),
         };
 
-        self.dispatch_reducer(&action_with_id);
-        self.dispatch_effects(&action_with_id);
+        self.dispatch_reducer(&action_with_meta);
+        self.dispatch_effects(&action_with_meta);
 
         true
     }
 
     /// Runs the reducer.
     #[inline(always)]
-    fn dispatch_reducer(&mut self, action_with_id: &ActionWithId<Action>) {
+    fn dispatch_reducer(&mut self, action_with_id: &ActionWithMeta<Action>) {
         (&self.reducer)(self.state.get_mut(), action_with_id);
     }
 
     /// Runs the effects.
     #[inline(always)]
-    fn dispatch_effects(&mut self, action_with_id: &ActionWithId<Action>) {
+    fn dispatch_effects(&mut self, action_with_id: &ActionWithMeta<Action>) {
         (&self.effects)(self, action_with_id);
     }
 }

@@ -51,7 +51,7 @@ mod store;
 pub use store::Store;
 
 mod action;
-pub use action::{ActionId, ActionWithId, EnablingCondition};
+pub use action::{ActionId, ActionWithMeta, EnablingCondition};
 
 mod reducer;
 pub use reducer::Reducer;
