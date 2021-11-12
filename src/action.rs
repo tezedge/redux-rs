@@ -75,11 +75,9 @@ impl<Action> ActionWithMeta<Action> {
     }
 }
 
-pub trait EnablingCondition {
-    type State;
-
+pub trait EnablingCondition<State> {
     /// Enabling condition for the Action.
     ///
     /// Checks if the given action is enabled for a given state.
-    fn is_enabled(&self, state: &Self::State) -> bool;
+    fn is_enabled(&self, state: &State) -> bool;
 }

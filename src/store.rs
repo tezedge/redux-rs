@@ -108,7 +108,7 @@ where
     /// If action is not enabled, we return false and do nothing.
     pub fn dispatch<T>(&mut self, action: T) -> bool
     where
-        T: Into<Action> + EnablingCondition<State = State>,
+        T: Into<Action> + EnablingCondition<State>,
     {
         if !action.is_enabled(self.state()) {
             return false;
