@@ -53,6 +53,9 @@ pub use store::Store;
 mod action;
 pub use action::{ActionId, ActionWithMeta, EnablingCondition};
 
+mod safety_condition;
+pub use safety_condition::SafetyCondition;
+
 mod reducer;
 pub use reducer::Reducer;
 
