@@ -49,6 +49,8 @@ pub struct Store<State, Service, Action> {
     pub state: StateWrapper<State>,
     pub service: Service,
 
+    initial_time: SystemTime,
+    initial_monotonic_time: Instant,
     monotonic_time: Instant,
 
     /// Current recursion depth of dispatch.
@@ -83,7 +85,10 @@ where
                 inner: initial_state,
             },
 
+            initial_time,
+            initial_monotonic_time,
             monotonic_time: initial_monotonic_time,
+
             recursion_depth: 0,
             last_action_id: ActionId::new_unchecked(initial_time_nanos as u64),
         }
@@ -98,6 +103,16 @@ where
     #[inline(always)]
     pub fn service(&mut self) -> &mut Service {
         &mut self.service
+    }
+
+    /// Convert monotonic time to system clock in nanoseconds from epoch.
+    pub fn monotonic_to_time(&self, monotonic_time: Instant) -> u64 {
+        let time_passed = monotonic_time.duration_since(self.initial_monotonic_time);
+        self.initial_time
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map(|x| x + time_passed)
+            .map(|x| x.as_nanos())
+            .unwrap_or(0) as u64
     }
 
     /// Dispatch an Action.
@@ -164,7 +179,10 @@ where
             service: self.service.clone(),
             state: self.state.clone(),
 
+            initial_time: self.initial_time.clone(),
+            initial_monotonic_time: self.initial_monotonic_time.clone(),
             monotonic_time: self.monotonic_time.clone(),
+
             recursion_depth: self.recursion_depth.clone(),
             last_action_id: self.last_action_id.clone(),
         }
