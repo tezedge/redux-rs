@@ -12,6 +12,7 @@ use std::time::{Duration, SystemTime};
 /// //           nano     micro  milli  sec    min  hour day  year
 /// assert_eq!(u64::MAX / 1000 / 1000 / 1000 / 60 / 60 / 24 / 365, 584);
 /// ```
+#[cfg_attr(fuzzing, derive(fuzzcheck::DefaultMutator))]
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ActionId(u64);

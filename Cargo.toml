@@ -19,3 +19,4 @@ std = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
+fuzzcheck = { git = "https://github.com/tezedge/fuzzcheck-rs.git" }
