@@ -1,3 +1,4 @@
+use enum_dispatch::enum_dispatch;
 use std::time::{Duration, SystemTime};
 
 /// Time in nanoseconds from [std::time::UNIX_EPOCH].
@@ -76,6 +77,7 @@ impl<Action> ActionWithMeta<Action> {
     }
 }
 
+#[enum_dispatch]
 pub trait EnablingCondition<State> {
     /// Enabling condition for the Action.
     ///
