@@ -46,7 +46,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
-#![feature(no_coverage)]
+#![cfg_attr(feature = "fuzzing", feature(no_coverage))]
 
 mod store;
 pub use store::Store;
